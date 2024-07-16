@@ -1,0 +1,67 @@
+#include <stdio.h>
+#include <time.h>
+
+typedef struct {
+    char firstWeekStartDate[11];
+    char lastWeekStartDate[11];
+    int totalWeeks;
+} WeekInfo;
+
+int dayOfWeek(int d, int m, int y) {
+    static int t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+    y -= m < 3;
+    return (y + y / 4 - y / 100 + y / 400 + t[m - 1] + d) % 7;
+}
+
+void addDays(struct tm *date, int days) {
+    date->tm_mday += days;
+    mktime(date);
+}
+
+WeekInfo getWeekInfo(char* dateStr) {
+    WeekInfo info;
+
+    int month, day, year;
+    sscanf(dateStr, "%d/%d/%d", &month, &day, &year);
+
+    // First week start date
+    struct tm firstDate = {0};
+    firstDate.tm_year = year - 1900;
+    firstDate.tm_mon = 0; // January
+    firstDate.tm_mday = 1; // 1st January
+    mktime(&firstDate);
+    int firstDayWeekDay = dayOfWeek(1, 1, year);
+    if (firstDayWeekDay != 1) { // if it's not Monday
+        addDays(&firstDate, (8 - firstDayWeekDay) % 7);
+    }
+    strftime(info.firstWeekStartDate, sizeof(info.firstWeekStartDate), "%m/%d/%Y", &firstDate);
+
+    // Last week start date
+    struct tm lastDate = {0};
+    lastDate.tm_year = year - 1900;
+    lastDate.tm_mon = 11; // December
+    lastDate.tm_mday = 31; // 31st December
+    mktime(&lastDate);
+    int lastDayWeekDay = dayOfWeek(31, 12, year);
+    if (lastDayWeekDay != 1) { // if it's not Monday
+        addDays(&lastDate, -(lastDayWeekDay - 1));
+    }
+    strftime(info.lastWeekStartDate, sizeof(info.lastWeekStartDate), "%m/%d/%Y", &lastDate);
+
+    // Total weeks in the year
+    int daysInYear = (lastDate.tm_yday + 1);
+    info.totalWeeks = (daysInYear + 6) / 7;
+
+    return info;
+}
+
+int main() {
+    char inputDate[11] = "07/16/2024";
+    WeekInfo info = getWeekInfo(inputDate);
+
+    printf("First week start date: %s\n", info.firstWeekStartDate);
+    printf("Last week start date: %s\n", info.lastWeekStartDate);
+    printf("Total weeks: %d\n", info.totalWeeks);
+
+    return 0;
+}
